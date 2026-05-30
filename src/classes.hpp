@@ -169,10 +169,11 @@ class Gate {
             yellow_led.set_value(1);
             Serial.println("Printing your ticket, please wait a few seconds:");
             for (int i = 3; i >= 0; i--){
-                Serial.println(i);
-                Serial.print("s");
+                Serial.print(i);
+                Serial.println("s");
                 delay(1000);
             }
+            Serial.print("You're free to go, have a good day :)");
             yellow_led.set_value(0);
             return *this;
         }
