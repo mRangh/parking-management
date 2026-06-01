@@ -56,6 +56,22 @@ class Button: public Input {
 
 };
 
+// A simple analogic potentiometer input.
+class Potentiometer: public Input {
+
+    public:
+
+        Potentiometer(int port): Input(port){}
+
+        int get_value(){
+            value = analogRead(pin); // Analogic reading
+            return value;
+        }
+    
+    private:
+
+};
+
 // A simple digital switch input.
 class Switch: public Input {
 
@@ -64,6 +80,7 @@ class Switch: public Input {
         Switch(int port) : Input(port){}
 
     private:
+
 };
 
 // An analog switch that maps an analog reading to discrete switch positions.
@@ -95,6 +112,27 @@ class Multiswitch: public Input {
 
         int analog_step = 0; // Analog range per switch position.
         int reading = 0;     // Raw analog input.
+
+};
+
+class Ultrassonic: public Input {
+
+    public:
+
+        long sound_speed = 0.034; // Sound speed in cm/us
+
+        Ultrassonic(int port) : Input(port){}
+
+        int get_value(){
+            duration = pulseIn(pin, 1);       // Reads the travel time of the sound wave.
+            value = duration * sound_speed/2; // Calculates the distance.
+            return value;
+        }
+
+    private:
+
+        long duration = 0.0;
+
 };
 
 // Base class for a digital output pin.
