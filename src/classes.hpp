@@ -1,9 +1,51 @@
 #include <Arduino.h>
+#include <vector>
 #ifndef CLASSES_HPP
 #define CLASSES_HPP
 
+// Base class for any globally tracked hardware object.
+// Derived classes should implement `set_hardware()` to configure the
+// hardware state for each instance.
+class Global {
+    
+    public:
+
+        // Default virtual destructor allows safe deletion through base pointers.
+        virtual ~Global() = default;
+
+        // Register a new object in the global object list.
+        // This enables centralized initialization via `Global::set()`.
+        Global(Global* new_object){
+            if (new_object != nullptr){
+                object_list.push_back(new_object);
+            }
+        }
+
+        // Configure hardware for every registered global object.
+        // Call this once after constructing all objects to initialize pins.
+        static void set(){
+            for (Global* obj : object_list){
+                if (obj != nullptr){
+                    obj->set_hardware();
+                }
+            }
+        }
+
+        // Derived classes must implement this to initialize their hardware.
+        virtual void set_hardware() = 0;
+
+    private:
+
+        // Shared registry of all globally created hardware objects.
+        static std::vector<Global*> object_list;
+
+};
+
+// Define the static object list storage for the Global class.
+std::vector<Global*> Global::object_list;
+
 // Base class for a digital input pin.
-class Input {
+class Input: public Global {
 
     public:
 
@@ -11,16 +53,17 @@ class Input {
         bool value = 0;     // Last read value.
         uint8_t kind;       // Pin mode, typically INPUT.
 
-        Input(int port){
+        virtual ~Input() = default;
+
+        Input(int port, Global* real_object) : Global(real_object){
             pin = port;
             kind = 0x01;
             value = 0;
         }
-        
+
         // Configure the pin mode on the board.
-        Input& set(){
+        void set_hardware() override{
             pinMode(pin, kind);
-            return *this;
         }
 
         // Read the digital state from the pin.
@@ -37,8 +80,8 @@ class Input {
 class Button: public Input {
 
     public:
-        
-        Button(int port) : Input(port){}
+
+        Button(int port) : Input(port, this){}
 
         // Toggle the switch state when the button is pressed.
         bool switch_logic(){
@@ -61,13 +104,13 @@ class Potentiometer: public Input {
 
     public:
 
-        Potentiometer(int port): Input(port){}
+        Potentiometer(int port): Input(port, this){}
 
-        int get_value(){
+        int get_value() override{
             value = analogRead(pin); // Analogic reading
             return value;
         }
-    
+
     private:
 
 };
@@ -77,7 +120,7 @@ class Switch: public Input {
 
     public:
 
-        Switch(int port) : Input(port){}
+        Switch(int port) : Input(port, this){}
 
     private:
 
@@ -90,15 +133,15 @@ class Multiswitch: public Input {
 
         int state;
         int num_of_pos;
-        
-        Multiswitch(int port, int how_much_states) : Input(port){
+
+        Multiswitch(int port, int how_much_states) : Input(port, this){
             num_of_pos = how_much_states;
         }
 
-        int get_value(){
+        int get_value() override{
             analog_step = round(1023.0 / (num_of_pos - 1));
             reading = analogRead(pin);
-            
+
             for (int i = 0; i < num_of_pos; i++){
                 int exp_value = i * analog_step;
                 int l_bound = exp_value - (analog_step / 2);
@@ -121,7 +164,7 @@ class Ultrassonic: public Input {
 
         long sound_speed = 0.034; // Sound speed in cm/us
 
-        Ultrassonic(int port) : Input(port){}
+        Ultrassonic(int port) : Input(port, this){}
 
         int get_value(){
             duration = pulseIn(pin, 1);       // Reads the travel time of the sound wave.
@@ -136,24 +179,25 @@ class Ultrassonic: public Input {
 };
 
 // Base class for a digital output pin.
-class Output {
-    
+class Output: public Global {
+
     public:
 
         int pin = 0;        // ESP32 pin number.
         bool value;         // Last written output value.
         uint8_t kind;       // Pin mode, typically OUTPUT.
 
-        Output(int port){
+        virtual ~Output() = default;
+
+        Output(int port, Global* real_object) : Global(real_object){
             pin = port;
             kind = 0x03;
             value = 0;
         }
 
         // Configure the pin mode as output.
-        Output& set(){
+        void set_hardware() override{
             pinMode(pin, kind);
-            return *this;
         }
 
         // Write a digital value to the pin.
@@ -162,7 +206,7 @@ class Output {
             digitalWrite(pin, value);
             return *this;
         }
-    
+
     private:
 
 };
@@ -172,7 +216,7 @@ class Led : public Output {
 
     public:
 
-        Led(int port) : Output(port){}
+        Led(int port) : Output(port, this){}
 
         // Set LED brightness using PWM. Expected 0-255.
         Led& glow(int power){
@@ -180,14 +224,14 @@ class Led : public Output {
             else Serial.println("PWM out of bounds");
             return *this;
         }
-    
+
     private:
 
 };
 
 // Gate controller that manages LED indicators and ticket printing.
 class Gate {
-    
+
     public:
 
         Led& red_led, green_led, yellow_led; // LEDs for closed/open/printing.
@@ -232,6 +276,9 @@ class Gate {
             yellow_led.set_value(0);
             return *this;
         }
+
+    private:
+
 };
 
 #endif

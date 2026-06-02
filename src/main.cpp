@@ -2,13 +2,13 @@
 #include "classes.hpp"
 
 // LEDs used to indicate gate status and ticket printing.
-Led red_led{16};    // Red LED pin for gate closed state.
-Led green_led{17};  // Green LED pin for gate open state.
-Led yellow_led{18}; // Yellow LED pin for ticket printing indicator.
+Led red_led{25};    // Red LED pin for gate closed state.
+Led yellow_led{26}; // Yellow LED pin for ticket printing indicator.
+Led green_led{27};  // Green LED pin for gate open state.
 
 // Inputs
-Button b1{19};      // Button used to request a ticket and open the gate.
-Switch sensor{21};  // Entry sensor to detect a vehicle present at the gate.
+Button b1{32};      // Button used to request a ticket and open the gate.
+Switch sensor{33};  // Entry sensor to detect a vehicle present at the gate.
 
 // Gate controller that drives the LEDs.
 Gate gate{red_led, green_led, yellow_led};
@@ -17,11 +17,8 @@ void setup() {
   Serial.begin(115200);
 
   // Initialize all GPIO pins before use.
-  red_led.set();
-  green_led.set();
-  yellow_led.set();
-  sensor.set();
-  b1.set();
+  Global::set();
+
 }
 
 void loop() {
