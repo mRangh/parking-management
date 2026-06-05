@@ -34,5 +34,5 @@ void loop() {
   }
 
   // Small delay for polling cadence.
-  delay(50);
+  delay(100);
 }

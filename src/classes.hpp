@@ -51,13 +51,13 @@ class Input: public Global {
 
         int pin = 0;        // ESP32 pin number.
         bool value = 0;     // Last read value.
-        uint8_t kind;       // Pin mode, typically INPUT.
+        uint8_t kind;       // Pin mode, typically INPUT_PULLDOWN.
 
         virtual ~Input() = default;
 
         Input(int port, Global* real_object) : Global(real_object){
             pin = port;
-            kind = 0x01;
+            kind = 0x09;
             value = 0;
         }
 
@@ -220,7 +220,7 @@ class Led : public Output {
 
         // Set LED brightness using PWM. Expected 0-255.
         Led& glow(int power){
-            if (0 <= power <= 255) analogWrite(pin, power);
+            if (0 <= power <= 100) analogWrite(pin, (power*255)/100);
             else Serial.println("PWM out of bounds");
             return *this;
         }
@@ -249,7 +249,7 @@ class Gate {
         Gate& open(){
             status = 1;
             green_led.set_value(1);
-            red_led.set_value(0);
+            red_led.glow(0);
             return *this;
         }
 
@@ -258,7 +258,7 @@ class Gate {
             delay(1000);
             status = 0;
             green_led.set_value(0);
-            red_led.set_value(1);
+            red_led.glow(100);
             return *this;
         }
 
@@ -266,13 +266,16 @@ class Gate {
         Gate& print_ticket(){
             print = 1;
             yellow_led.set_value(1);
-            Serial.println("Printing your ticket, please wait a few seconds:");
+            Serial.println("\nPrinting your ticket, please wait a few seconds:");
             for (int i = 3; i >= 0; i--){
+                red_led.glow(50);
                 Serial.print(i);
                 Serial.println("s");
-                delay(1000);
+                delay(500);
+                red_led.glow(100);
+                delay(500);
             }
-            Serial.println("You're free to go, have a good day :)");
+            Serial.println("You're free to go, have a good day :)\n");
             yellow_led.set_value(0);
             return *this;
         }
